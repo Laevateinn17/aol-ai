@@ -107,6 +107,35 @@ except:
     classifier = train()
 
 
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    data = request.json
+    events = data['events']
+
+    for event in events:
+        if 'message' in event and 'text' in event['message']:
+            user_message = event['message']['text']
+            print(user_message)
+            preprocessed_chat = remove_stopwords(word_tokenize(remove_punctuation(user_message)))
+            prediction = classifier.classify(FreqDist(preprocessed_chat))
+            if prediction == 'marah':
+                response_text = "Jangan marah-marah ya gais!"
+            elif prediction == 'diskusi':
+                response_text = "Wah ada yang lagi diskusi nih"
+            elif prediction == 'kick':
+                response_text = "Calm dong gais"
+            elif prediction == 'ngajak':
+                response_text = "Ayo yang jangan lupa kerjain tugasnya"
+            elif prediction == 'ngomong_kotor':
+                response_text = "Gais, jangan ngomong kotor dong"
+            elif prediction == 'read_doang':
+                response_text = "Ini yang sudah read jawab dong!"
+
+
+            reply_token = event['replyToken']
+            send_line_message(reply_token, response_text)
+
+
 # @app.route('/assistants', methods=['GET'])
 # def assistant():
 #     response = requests.get(bluejack_url)
