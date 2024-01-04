@@ -1,6 +1,11 @@
-from flask import Flask, jsonify
-from flask_cors import CORS
+from nltk.tokenize import word_tokenize
+from nltk import FreqDist
+from nltk.classify import NaiveBayesClassifier, accuracy
+from nltk.corpus import stopwords
+import pickle
+from flask import Flask, request, jsonify
 import requests
+from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
