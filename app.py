@@ -6,6 +6,11 @@ import pickle
 from flask import Flask, request, jsonify
 import requests
 from flask_cors import CORS
+import nltk
+
+
+nltk.download('punkt')
+nltk.download('stopwords')
 
 app = Flask(__name__)
 CORS(app)
@@ -115,7 +120,6 @@ def webhook():
     for event in events:
         if 'message' in event and 'text' in event['message']:
             user_message = event['message']['text']
-            print(user_message)
             preprocessed_chat = remove_stopwords(word_tokenize(remove_punctuation(user_message)))
             prediction = classifier.classify(FreqDist(preprocessed_chat))
             if prediction == 'marah':
@@ -132,8 +136,9 @@ def webhook():
                 response_text = "Ini yang sudah read jawab dong!"
 
 
-            reply_token = event['replyToken']
-            send_line_message(reply_token, response_text)
+            # reply_token = event['replyToken']
+            # send_line_message(reply_token, response_text)
+        return 'hheheheh'
 
 
 # @app.route('/assistants', methods=['GET'])
