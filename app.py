@@ -26,6 +26,87 @@ def remove_stopwords(words):
 def hello():
     return 'Hello there'
 
+def train():
+    diskusi = open("Diskusi.txt","r").read()
+    kick = open("Kick.txt","r").read()
+    marah = open("Marah.txt","r").read()
+    ngajak = open("NgajakTugas.txt","r").read()
+    ngomong_kotor = open("NgomongKotor.txt","r").read()
+    read_doang = open("ReadDoang.txt","r").read()
+
+    diskusi_words = remove_stopwords(word_tokenize(remove_punctuation(diskusi)))
+    kick_words = remove_stopwords(word_tokenize(remove_punctuation(kick)))
+    marah_words = remove_stopwords(word_tokenize(remove_punctuation(marah)))
+    ngajak_words = remove_stopwords(word_tokenize(remove_punctuation(ngajak)))
+    kotor_words = remove_stopwords(word_tokenize(remove_punctuation(ngomong_kotor)))
+    read_words = remove_stopwords(word_tokenize(remove_punctuation(read_doang)))
+
+    all_words = []
+    for word in diskusi_words:
+        all_words.append(word)
+    for word in kick_words:
+        all_words.append(word)
+    for word in marah_words:
+        all_words.append(word)
+    for word in ngajak_words:
+        all_words.append(word)
+    for word in kotor_words:
+        all_words.append(word)
+    for word in read_words:
+        all_words.append(word)
+
+    all_words = FreqDist(all_words)
+    word_features = list(all_words.keys())[:5000]
+
+    documents = []
+    for sentence in diskusi.split('\n'):
+        documents.append((sentence, "diskusi"))
+    for sentence in kick.split('\n'):
+        documents.append((sentence, "kick"))
+    for sentence in marah.split('\n'):
+        documents.append((sentence, "marah"))
+    for sentence in ngajak.split('\n'):
+        documents.append((sentence, "ngajak"))
+    for sentence in ngomong_kotor.split('\n'):
+        documents.append((sentence, "ngomong_kotor"))
+    for sentence in read_doang.split('\n'):
+        documents.append((sentence, "read_doang"))
+
+    featuresets = []
+    for sentence, label in documents:
+        features = {}
+        words = word_tokenize(sentence)
+        for w in word_features:
+            features[w] = (w in words)
+        featuresets.append((features, label))
+
+    # print(featuresets)
+    import random
+    random.shuffle(featuresets)
+
+    train_count = int(len(featuresets)*0.9)
+    train_data = featuresets[:train_count]
+    test_data = featuresets[train_count:]
+
+    classifier = NaiveBayesClassifier.train(train_data)
+    # print(classifier.show_most_informative_features(n=700))
+    # print(accuracy(classifier, test_data))
+
+    file = open("mymodel.pickle","wb")
+    pickle.dump(classifier, file)
+    file.close()
+
+    return classifier
+
+try:
+    file = open("mymodel.pickle","rb")
+    classifier = pickle.load(file)
+    file.close()
+except:
+    print("No data!")
+    classifier = train()
+
+
 # @app.route('/assistants', methods=['GET'])
 # def assistant():
 #     response = requests.get(bluejack_url)
