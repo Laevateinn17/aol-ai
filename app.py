@@ -12,6 +12,10 @@ import nltk
 nltk.download('punkt')
 nltk.download('stopwords')
 
+
+str = 'hiu'
+
+
 app = Flask(__name__)
 CORS(app)
 
@@ -29,7 +33,7 @@ def remove_stopwords(words):
 
 @app.route('/', methods=['GET'])
 def hello():
-    return 'Hello there'
+    return str
 
 def train():
     diskusi = open("Diskusi.txt","r").read()
@@ -122,6 +126,7 @@ def webhook():
                 user_message = event['message']['text']
                 preprocessed_chat = remove_stopwords(word_tokenize(remove_punctuation(user_message)))
                 prediction = classifier.classify(FreqDist(preprocessed_chat))
+                str = prediction
                 if prediction == 'marah':
                     response_text = "Jangan marah-marah ya gais!"
                 elif prediction == 'diskusi':
@@ -144,6 +149,18 @@ def webhook():
     finally:
         return 'yey'
 
+def send_line_message(reply_token, text):
+    line_url = 'https://api.line.me/v2/bot/message/reply'
+    channel_access_token = "TQcMI7gfUAD/eEszmvuTOcpQCnJSJ3LogpM3YAIwSnLRFzIcwyBMQehRsAncc3EFbIoMLmsvABWqXsGiO0+XPsDaru0qpWKCnwmR/CPenafQu7cBDIvTipT4f46jEEaYMMi+ZjZJ0DA1pLrqfcl6lQdB04t89/1O/w1cDnyilFU="
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + channel_access_token,
+    }
+    data = {
+        'replyToken': reply_token,
+        'messages': [{'type': 'text', 'text': text}],
+    }
+    requests.post(line_url, json=data, headers=headers)
 
 # @app.route('/assistants', methods=['GET'])
 # def assistant():
