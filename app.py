@@ -114,6 +114,7 @@ except:
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
+    return 'yey'
     data = request.json
     events = data['events']
 
