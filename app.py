@@ -3,6 +3,7 @@ from nltk import FreqDist
 from nltk.classify import NaiveBayesClassifier, accuracy
 from nltk.corpus import stopwords
 import pickle
+import random
 from flask import Flask, request, jsonify
 import requests
 from flask_cors import CORS
@@ -13,14 +14,50 @@ nltk.download('punkt')
 nltk.download('stopwords')
 
 
-str = 'hiu'
 
 
 app = Flask(__name__)
 CORS(app)
 
-bluejack_url = 'https://bluejack.binus.ac.id/lapi/api/Assistant/All'
-messier_url = 'https://socs1.binus.ac.id/messier/GeneralWeb.svc/GetThumbnail/'
+def help_command():
+    command_list = """
+Command List:
+/inputTasks <tugas1,tugas2,tugas3,...>
+  -> Memasukkan daftar tugas yang dipisahkan koma
+
+/randomAssignment
+  -> Jangan lupa jalankan command /inputTasks untuk memasukkan daftar tugasnya
+  -> Mengacak dan membagikan tugas yang telah dimasukkan
+
+/help
+  -> Menampilkan command lists
+    """
+    return command_list
+
+def random_diskusi():
+    sentence = ["Wah ada yang lagi diskusi nih", "Ayo siapa yang punya ide bagus?", "Sepertinya itu ide yang bagus", "Hmm oke banget!"]
+    return random.choice(sentence)
+
+def random_kick():
+    sentence = ["Kesian yang mau dikeluarin...", "Makanya kalau udah ada tugas langsung dikerjain", "Itu akibatnya kalau kamu tidak mengerjakan tugas", "Dasar beban kelompok!"]
+    return random.choice(sentence)
+
+def random_marah():
+    sentence = ["Jangan marah-marah gais nanti cepat tua", "Calm down mapren", "Santai dong bos~", "Waduh, ada yang marah nih..."]
+    return random.choice(sentence)
+
+def random_ngajak():
+    sentence = ["Ayo dikerjain tugasnya", "Dikerjain ya gais jangan ditunda terus", "Semangat kerjain nya <3", "Hayo sudah mau deadline"]
+    return random.choice(sentence)
+
+def random_kotor():
+    sentence = ["Eitss kasar sekali mulut kau!", "Hush tidak boleh ngomong kasar ya", "Hadeh mulut kamu ya", "Jangan ngomong kasar dong!"]
+    return random.choice(sentence)
+
+def random_read():
+    sentence = ["Ada yang jualan kacang nih", "Kalau udah read, dibalas dong gais", "Kacang~", "Read aja teros!"]
+    return random.choice(sentence)
+
 
 def remove_punctuation(text):
     import string
@@ -33,7 +70,7 @@ def remove_stopwords(words):
 
 @app.route('/', methods=['GET'])
 def hello():
-    return str
+    return 'hello'
 
 def train():
     diskusi = open("Diskusi.txt","r").read()
@@ -89,7 +126,7 @@ def train():
             features[w] = (w in words)
         featuresets.append((features, label))
 
-    # print(featuresets)
+   
     import random
     random.shuffle(featuresets)
 
@@ -98,8 +135,6 @@ def train():
     test_data = featuresets[train_count:]
 
     classifier = NaiveBayesClassifier.train(train_data)
-    # print(classifier.show_most_informative_features(n=700))
-    # print(accuracy(classifier, test_data))
 
     file = open("mymodel.pickle","wb")
     pickle.dump(classifier, file)
@@ -115,35 +150,61 @@ except:
     print("No data!")
     classifier = train()
 
-
 @app.route('/webhook', methods=['POST'])
 def webhook():
     try:
         data = request.json
         events = data['events']
+
         for event in events:
             if 'message' in event and 'text' in event['message']:
                 user_message = event['message']['text']
-                preprocessed_chat = remove_stopwords(word_tokenize(remove_punctuation(user_message)))
-                prediction = classifier.classify(FreqDist(preprocessed_chat))
-                str = prediction
-                if prediction == 'marah':
-                    response_text = "Jangan marah-marah ya gais!"
-                elif prediction == 'diskusi':
-                    response_text = "Wah ada yang lagi diskusi nih"
-                elif prediction == 'kick':
-                    response_text = "Calm dong gais"
-                elif prediction == 'ngajak':
-                    response_text = "Ayo yang jangan lupa kerjain tugasnya"
-                elif prediction == 'ngomong_kotor':
-                    response_text = "Gais, jangan ngomong kotor dong"
-                elif prediction == 'read_doang':
-                    response_text = "Ini yang sudah read jawab dong!"
+                if user_message == '/help':
+                    response_text = help_command()
+                    reply_token = event['replyToken']
+                    send_line_message(reply_token, response_text)
 
+                elif user_message == '/inputTasks':
+                    input_tasks = user_message.split(' ', 1)[1]
+                    global task_list
+                    task_list = input_tasks.split(',')
+                    response_text = 'Daftar tugas telah diterima.'
+                    reply_token = event['replyToken']
+                    send_line_message(reply_token, response_text)
 
-                reply_token = event['replyToken']
-                send_line_message(reply_token, response_text)
-            return 'hheheheh'
+                elif user_message == '/randomAssignment':
+                    if not task_list:
+                        response_text = 'Anda perlu memasukkan daftar tugas terlebih dahulu.'
+                    else:
+                        random.shuffle(task_list)
+                        assignment_message = 'Pembagian tugas:\n'
+                        for i, task in enumerate(task_list, start=1):
+                            assignment_message += f'{i}. {task}\n'
+                        response_text = assignment_message
+                        reply_token = event['replyToken']
+                        send_line_message(reply_token, response_text)
+
+                else:
+                    preprocessed_chat = remove_stopwords(word_tokenize(remove_punctuation(user_message)))
+                    prediction = classifier.classify(FreqDist(preprocessed_chat))
+
+                    if prediction == 'marah':
+                        response_text = random_marah()
+                    elif prediction == 'diskusi':
+                        response_text = random_diskusi()
+                    elif prediction == 'kick':
+                        response_text = random_kick()
+                    elif prediction == 'ngajak':
+                        response_text = random_ngajak()
+                    elif prediction == 'ngomong_kotor':
+                        response_text = random_kotor()
+                    elif prediction == 'read_doang':
+                        response_text = random_read()
+                    random_number = random.randint(1, 3)
+                    if random_number == 1:
+                        reply_token = event['replyToken']
+                        send_line_message(reply_token, response_text)
+                    return 'hheheheh'
     except:
         print("an error occurred")
     finally:
