@@ -13,8 +13,7 @@ nltk.download('stopwords')
 app = Flask(__name__)
 
 def help_command():
-    command_list = """
-Command List:
+    command_list = """Command List:
 /inputTasks <tugas1,tugas2,tugas3,...>
   -> Memasukkan daftar tugas yang dipisahkan koma
 
@@ -138,8 +137,15 @@ except:
     print("No data!")
     classifier = train()
 
+task_list = []
+anggota_list = []
+
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
+    task_list = []
+    anggota_list = []
+
     try:
         data = request.json
         events = data['events']
@@ -152,25 +158,37 @@ def webhook():
                     reply_token = event['replyToken']
                     send_line_message(reply_token, response_text)
 
-                elif user_message == '/inputTasks':
-                    input_tasks = user_message.split(' ', 1)[1]
-                    global task_list
-                    task_list = input_tasks.split(',')
-                    response_text = 'Daftar tugas telah diterima.'
+                elif user_message.startswith('/inputTasks'):
+                    if '(' not in user_message or ')' not in user_message:
+                        response_text = 'Format penggunaan: /inputTasks (daftar_tugas) (daftar_anggota)'
+                    else:
+                        content = user_message[user_message.find('(')+1:user_message.rfind(')')]
+                        tasks_and_members = content.split(' ')
+
+                        if len(tasks_and_members) < 2:
+                            response_text = 'Format penggunaan: /inputTasks (daftar_tugas) (daftar_anggota)'
+                        else:
+                            task_list = tasks_and_members[0].split(',')
+                            anggota_list = tasks_and_members[1].split(',')
+                            response_text = 'Daftar tugas dan anggota telah diterima.'
                     reply_token = event['replyToken']
                     send_line_message(reply_token, response_text)
 
                 elif user_message == '/randomAssignment':
-                    if not task_list:
+                    if len(task_list) == 0:
                         response_text = 'Anda perlu memasukkan daftar tugas terlebih dahulu.'
+                    elif len(task_list) != len(anggota_list):
+                         response_text = 'Jumlah daftar tugas harus sama dengan jumlah daftar anggota.'
                     else:
                         random.shuffle(task_list)
+                        random.shuffle(anggota_list)
                         assignment_message = 'Pembagian tugas:\n'
-                        for i, task in enumerate(task_list, start=1):
-                            assignment_message += f'{i}. {task}\n'
+                        for i, (task, anggota) in enumerate(zip(task_list,anggota_list), start=1):
+                            assignment_message += f'{i}.{anggota.strip("()")} : {task.strip("()")}\n'
                         response_text = assignment_message
-                        reply_token = event['replyToken']
-                        send_line_message(reply_token, response_text)
+                    reply_token = event['replyToken']
+                    send_line_message(reply_token, response_text)
+                        
 
                 else:
                     preprocessed_chat = remove_stopwords(word_tokenize(remove_punctuation(user_message)))
@@ -188,11 +206,10 @@ def webhook():
                         response_text = random_kotor()
                     elif prediction == 'read_doang':
                         response_text = random_read()
-                    random_number = random.randint(1, 3)
+                    random_number = random.randint(1, 2)
                     if random_number == 1:
                         reply_token = event['replyToken']
                         send_line_message(reply_token, response_text)
-                    return 'hheheheh'
     except:
         print("an error occurred")
     finally:
