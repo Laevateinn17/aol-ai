@@ -8,7 +8,7 @@ from flask import Flask, request, session
 import requests
 from flask_cors import CORS
 import nltk
-
+import os
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -17,6 +17,7 @@ nltk.download('stopwords')
 
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
 CORS(app)
 
 def help_command():
@@ -150,8 +151,6 @@ except:
     print("No data!")
     classifier = train()
     
-task_list = []
-anggota_list = []
 
 
 @app.route('/webhook', methods=['POST'])
