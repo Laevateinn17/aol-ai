@@ -155,8 +155,6 @@ except:
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    task_list = []
-    anggota_list = []
 
     try:
         data = request.json
