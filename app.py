@@ -4,7 +4,7 @@ from nltk.classify import NaiveBayesClassifier, accuracy
 from nltk.corpus import stopwords
 import pickle
 import random
-from flask import Flask, request, jsonify
+from flask import Flask, request, session
 import requests
 from flask_cors import CORS
 import nltk
@@ -22,8 +22,8 @@ CORS(app)
 def help_command():
     command_list = """
 Command List:
-/inputTasks <tugas1,tugas2,tugas3,...>
-  -> Memasukkan daftar tugas yang dipisahkan koma
+/inputTasks (task1,task2,task3) (person1,person2,person3)
+  -> Format penggunaan: /inputTasks (daftar_tugas) (daftar_anggota)
 
 /randomAssignment
   -> Jangan lupa jalankan command /inputTasks untuk memasukkan daftar tugasnya
@@ -181,13 +181,15 @@ def webhook():
                         if len(tasks_and_members) < 2:
                             response_text = 'Format penggunaan: /inputTasks (daftar_tugas) (daftar_anggota)'
                         else:
-                            task_list = tasks_and_members[0].split(',')
-                            anggota_list = tasks_and_members[1].split(',')
+                            session['task_list'] = tasks_and_members[0].split(',')
+                            session['anggota_list'] = tasks_and_members[1].split(',')
                             response_text = 'Daftar tugas dan anggota telah diterima.'
                     reply_token = event['replyToken']
                     send_line_message(reply_token, response_text)
 
                 elif user_message == '/randomAssignment':
+                    task_list = session.get('task_list', [])
+                    anggota_list = session.get('anggota_list', [])
                     if len(task_list) == 0:
                         response_text = 'Anda perlu memasukkan daftar tugas terlebih dahulu.'
                     elif len(task_list) != len(anggota_list):
@@ -201,8 +203,7 @@ def webhook():
                         response_text = assignment_message
                     reply_token = event['replyToken']
                     send_line_message(reply_token, response_text)
-                        
-
+                
                 else:
                     preprocessed_chat = remove_stopwords(word_tokenize(remove_punctuation(user_message)))
                     prediction = classifier.classify(FreqDist(preprocessed_chat))
